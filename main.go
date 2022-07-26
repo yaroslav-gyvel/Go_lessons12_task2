@@ -10,7 +10,6 @@ import (
 // Результат друку:
 // “result: 26”
 func main() {
-	var numStream = make(chan int)
 	var sum int
 
 	n := [][]int{
@@ -18,16 +17,26 @@ func main() {
 		{7, 3, 94, 3, 0},
 		{4, 2, 8, 35},
 	}
-	go func() {
-		defer close(numStream)
-		for _, slice := range n {
-			for _, num := range slice {
-				numStream <- num
-			}
-		}
-	}()
-	for i := range numStream {
-		sum += i
+
+	m := make(map[int]chan int)
+
+	for k, slice := range n {
+		m[k] = make(chan int)
+		go sumSlice(slice, m[k])
 	}
+
+	for k := 0; k < len(n); k++ {
+		sum += <-m[k]
+	}
+
 	fmt.Printf("result: %v\n", sum)
+}
+
+func sumSlice(s []int, Ch chan<- int) {
+	total := 0
+	for _, num := range s {
+		total += num
+	}
+	Ch <- total
+	close(Ch)
 }
